@@ -1,7 +1,10 @@
+// Contains the request handlers for creating and retrieving support tickets.
+
 import { inngest } from "../inngest/client.js";
 import Ticket from "../models/ticket.js";
 
 export const createTicket = async (req, res) => {
+  // Creates the initial ticket and starts asynchronous AI processing.
   try {
     const { title, description } = req.body;
     if (!title || !description) {
@@ -35,6 +38,7 @@ export const createTicket = async (req, res) => {
 };
 
 export const getTickets = async (req, res) => {
+  // Returns all tickets for staff and only the current user's tickets for users.
   try {
     const user = req.user;
     let tickets = [];
@@ -55,6 +59,7 @@ export const getTickets = async (req, res) => {
 };
 
 export const getTicket = async (req, res) => {
+  // Returns one ticket while limiting the visible fields for regular users.
   try {
     const user = req.user;
     let ticket;

@@ -1,3 +1,5 @@
+// Processes newly created tickets with AI, assigns staff, and sends notifications.
+
 import { inngest } from "../client.js";
 import Ticket from "../../models/ticket.js";
 import User from "../../models/user.js";
@@ -6,16 +8,18 @@ import { sendMail } from "../../utils/mailer.js";
 import analyzeTicket from "../../utils/ai.js";
 
 export const onTicketCreated = inngest.createFunction(
+  // Inngest retries transient workflow failures twice.
   { id: "on-ticket-created", retries: 2 },
   { event: "ticket/created" },
   async ({ event, step }) => {
     try {
+      // The event identifies the ticket that was created by the API request.
       const { ticketId } = event.data;
 
       //fetch ticket from DB
       const ticket = await step.run("fetch-ticket", async () => {
         const ticketObject = await Ticket.findById(ticketId);
-        if (!ticket) {
+        if (!ticketObject) {
           throw new NonRetriableError("Ticket not found");
         }
         return ticketObject;
@@ -27,6 +31,7 @@ export const onTicketCreated = inngest.createFunction(
 
       const aiResponse = await analyzeTicket(ticket);
 
+      // Save the AI classification and keep the skills for moderator matching.
       const relatedskills = await step.run("ai-processing", async () => {
         let skills = [];
         if (aiResponse) {
@@ -44,7 +49,8 @@ export const onTicketCreated = inngest.createFunction(
       });
 
       const moderator = await step.run("assign-moderator", async () => {
-        let user = await User.findOne({
+        // Prefer a moderator with a skill matching one of the AI-detected skills.
+        let moderator = await User.findOne({
           role: "moderator",
           skills: {
             $elemMatch: {
@@ -53,18 +59,18 @@ export const onTicketCreated = inngest.createFunction(
             },
           },
         });
-        if (!user) {
-          user = await User.findOne({
+        if (!moderator) {
+          moderator = await User.findOne({
             role: "admin",
           });
         }
         await Ticket.findByIdAndUpdate(ticket._id, {
-          assignedTo: user?._id || null,
+          assignedTo: moderator?._id || null,
         });
-        return user;
+        return moderator;
       });
 
-      await setp.run("send-email-notification", async () => {
+      await step.run("send-email-notification", async () => {
         if (moderator) {
           const finalTicket = await Ticket.findById(ticket._id);
           await sendMail(

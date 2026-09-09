@@ -1,5 +1,8 @@
+// Defines the MongoDB schema for support tickets and their AI-generated metadata.
+
 import mongoose from "mongoose";
 
+// References connect tickets to the users who created or received them.
 const ticketSchema = new mongoose.Schema({
   title: String,
   description: String,

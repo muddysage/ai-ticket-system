@@ -1,7 +1,10 @@
+// Configures Nodemailer with Mailtrap and sends application email notifications.
+
 import nodemailer from "nodemailer";
 
 export const sendMail = async (to, subject, text) => {
   try {
+    // Create the SMTP transporter from environment-specific Mailtrap settings.
     const transporter = nodemailer.createTransport({
       host: process.env.MAILTRAP_SMTP_HOST,
       port: process.env.MAILTRAP_SMTP_PORT,

@@ -1,3 +1,5 @@
+// Defines authentication and administrator routes for user accounts.
+
 import express from "express";
 import {
   getUsers,
@@ -10,6 +12,7 @@ import {
 import { authenticate } from "../middlewares/auth.js";
 const router = express.Router();
 
+// Administration endpoints are protected; signup and login are public.
 router.post("/update-user", authenticate, updateUser);
 router.get("/users", authenticate, getUsers);
 

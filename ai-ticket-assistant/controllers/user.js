@@ -9,10 +9,8 @@ export const signup = async (req, res) => {
   // Creates a user, starts the welcome-email workflow, and returns a JWT.
   const { email, password, skills = [] } = req.body;
   try {
-    const hashed = brcypt.hash(password, 10);
+    const hashed = await brcypt.hash(password, 10);
     const user = await User.create({ email, password: hashed, skills });
-
-    //Fire inngest event
 
     await inngest.send({
       name: "user/signup",
@@ -22,13 +20,23 @@ export const signup = async (req, res) => {
     });
 
     const token = jwt.sign(
-      { _id: user._id, role: user.role },
-      process.env.JWT_SECRET
+      { _id: user._id, role: user.role },//payload:This payload contains only the user identity information the backend wants to trust later.
+      process.env.JWT_SECRET//Sign it using a secret key
     );
 
-    res.json({ user, token });
+    const plainUser = {
+      _id: user._id,
+      email: user.email,
+      role: user.role,
+      skills: user.skills,
+      createdAt: user.createdAt,
+    };
+
+    return res.json({ user: plainUser, token });
   } catch (error) {
-    res.status(500).json({ error: "Signup failed", details: error.message });
+    return res
+      .status(500)
+      .json({ error: "Signup failed", details: error.message });
   }
 };
 
@@ -37,7 +45,7 @@ export const login = async (req, res) => {
   const { email, password } = req.body;
 
   try {
-    const user = User.findOne({ email });
+    const user = await User.findOne({ email });
     if (!user) return res.status(401).json({ error: "User not found" });
 
     const isMatch = await brcypt.compare(password, user.password);
@@ -51,9 +59,17 @@ export const login = async (req, res) => {
       process.env.JWT_SECRET
     );
 
-    res.json({ user, token });
+    const plainUser = {
+      _id: user._id,
+      email: user.email,
+      role: user.role,
+      skills: user.skills,
+      createdAt: user.createdAt,
+    };
+
+    return res.json({ user: plainUser, token });
   } catch (error) {
-    res.status(500).json({ error: "Login failed", details: error.message });
+    return res.status(500).json({ error: "Login failed", details: error.message });
   }
 };
 

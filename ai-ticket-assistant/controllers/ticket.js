@@ -12,21 +12,23 @@ export const createTicket = async (req, res) => {
         .status(400)
         .json({ message: "Title and description are required" });
     }
-    const newTicket = Ticket.create({
+
+    const newTicket = await Ticket.create({
       title,
       description,
-      createdBy: req.user._id.toString(),
+      createdBy: req.user._id,
     });
 
     await inngest.send({
       name: "ticket/created",
       data: {
-        ticketId: (await newTicket)._id.toString(),
+        ticketId: newTicket._id.toString(),
         title,
         description,
         createdBy: req.user._id.toString(),
       },
     });
+
     return res.status(201).json({
       message: "Ticket created and processing started",
       ticket: newTicket,
@@ -42,8 +44,9 @@ export const getTickets = async (req, res) => {
   try {
     const user = req.user;
     let tickets = [];
+
     if (user.role !== "user") {
-      tickets = Ticket.find({})
+      tickets = await Ticket.find({})
         .populate("assignedTo", ["email", "_id"])
         .sort({ createdAt: -1 });
     } else {
@@ -51,7 +54,8 @@ export const getTickets = async (req, res) => {
         .select("title description status createdAt")
         .sort({ createdAt: -1 });
     }
-    return res.status(200).json(tickets);
+
+    return res.status(200).json({ tickets });
   } catch (error) {
     console.error("Error fetching tickets", error.message);
     return res.status(500).json({ message: "Internal Server Error" });
@@ -65,12 +69,12 @@ export const getTicket = async (req, res) => {
     let ticket;
 
     if (user.role !== "user") {
-      ticket = Ticket.findById(req.params.id).populate("assignedTo", [
+      ticket = await Ticket.findById(req.params.id).populate("assignedTo", [
         "email",
         "_id",
       ]);
     } else {
-      ticket = Ticket.findOne({
+      ticket = await Ticket.findOne({
         createdBy: user._id,
         _id: req.params.id,
       }).select("title description status createdAt");
@@ -79,7 +83,8 @@ export const getTicket = async (req, res) => {
     if (!ticket) {
       return res.status(404).json({ message: "Ticket not found" });
     }
-    return res.status(404).json({ ticket });
+
+    return res.status(200).json({ ticket });
   } catch (error) {
     console.error("Error fetching ticket", error.message);
     return res.status(500).json({ message: "Internal Server Error" });

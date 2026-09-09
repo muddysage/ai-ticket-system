@@ -41,7 +41,9 @@ export const onTicketCreated = inngest.createFunction(
           skills = aiResponse.relatedSkills;
         }
         return skills;
+        
       });
+
 
       const moderator = await step.run("assign-moderator", async () => {
         let user = await User.findOne({
@@ -64,7 +66,7 @@ export const onTicketCreated = inngest.createFunction(
         return user;
       });
 
-      await setp.run("send-email-notification", async () => {
+      await step.run("send-email-notification", async () => {
         if (moderator) {
           const finalTicket = await Ticket.findById(ticket._id);
           await sendMail(

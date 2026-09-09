@@ -1,3 +1,5 @@
+// Provides administrators with user search, role editing, and skill management.
+
 import { useEffect, useState } from "react";
 
 export default function AdminPanel() {
@@ -14,6 +16,7 @@ export default function AdminPanel() {
   }, []);
 
   const fetchUsers = async () => {
+    // Retrieve users from the protected administrator endpoint.
     try {
       const res = await fetch(`${import.meta.env.VITE_SERVER_URL}/auth/users`, {
         headers: {
@@ -41,6 +44,7 @@ export default function AdminPanel() {
   };
 
   const handleUpdate = async () => {
+    // Convert the displayed comma-separated skills back into an array for the API.
     try {
       const res = await fetch(
         `${import.meta.env.VITE_SERVER_URL}/auth/update-user`,

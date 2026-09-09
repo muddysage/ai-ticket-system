@@ -1,6 +1,9 @@
+// Sends ticket details to Gemini and converts its triage response into a JavaScript object.
+
 import { createAgent, gemini } from "@inngest/agent-kit";
 
 const analyzeTicket = async (ticket) => {
+  // The agent is instructed to return structured information for the ticket workflow.
   const supportAgent = createAgent({
     model: gemini({
       model: "gemini-1.5-flash-8b",
@@ -52,6 +55,7 @@ Ticket information:
   const raw = response.output[0].context;
 
   try {
+    // Accept both raw JSON and JSON wrapped in a markdown code block.
     const match = raw.match(/```json\s*([\s\S]*?)\s*```/i);
     const jsonString = match ? match[1] : raw.trim();
     return JSON.parse(jsonString);

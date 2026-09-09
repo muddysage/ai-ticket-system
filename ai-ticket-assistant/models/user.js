@@ -1,5 +1,8 @@
+// Defines the MongoDB schema for users, roles, authentication data, and skills.
+
 import mongoose from "mongoose";
 
+// The role determines which backend resources a user can access.
 const userSchema = new mongoose.Schema({
   email: { type: String, required: true, unique: true },
   password: { type: String, required: true },

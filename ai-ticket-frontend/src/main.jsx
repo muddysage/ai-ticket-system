@@ -1,3 +1,5 @@
+// Mounts the React application and defines the client-side routes and auth boundaries.
+
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import "./index.css";
@@ -12,6 +14,7 @@ import Admin from "./pages/admin.jsx";
 
 createRoot(document.getElementById("root")).render(
   <StrictMode>
+    {/* BrowserRouter enables URL-based navigation without full page reloads. */}
     <BrowserRouter>
       <Routes>
         <Route

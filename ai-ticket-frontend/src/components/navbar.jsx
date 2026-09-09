@@ -1,3 +1,5 @@
+// Displays application navigation, the signed-in user's email, and logout controls.
+
 import { Link, useNavigate } from "react-router-dom";
 
 export default function Navbar() {
@@ -9,6 +11,7 @@ export default function Navbar() {
   const navigate = useNavigate();
 
   const logout = () => {
+    // Remove the client-side session and send the user to the login page.
     localStorage.removeItem("token");
     localStorage.removeItem("user");
     navigate("/login");

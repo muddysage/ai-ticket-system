@@ -1,3 +1,5 @@
+// Provides the login form and stores the backend JWT after successful authentication.
+
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
@@ -11,6 +13,7 @@ export default function LoginPage() {
   };
 
   const handleLogin = async (e) => {
+    // Submit credentials to the backend and redirect authenticated users home.
     e.preventDefault();
     setLoading(true);
     try {

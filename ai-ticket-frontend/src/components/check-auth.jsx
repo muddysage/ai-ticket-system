@@ -11,7 +11,7 @@ function CheckAuth({ children, protectedRoute }) {
     // The token is the frontend's simple indication that the user is logged in.
     const token = localStorage.getItem("token");
 
-    if (protectedRoute) {
+    if (protectedRoute === true) {
       if (!token) {
         navigate("/login");
       } else {

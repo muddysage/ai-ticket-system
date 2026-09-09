@@ -1,3 +1,5 @@
+// Lets authenticated users create tickets and browse the tickets returned by the API.
+
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 
@@ -9,6 +11,7 @@ export default function Tickets() {
   const token = localStorage.getItem("token");
 
   const fetchTickets = async () => {
+    // Load tickets using the JWT stored during login or signup.
     try {
       const res = await fetch(`${import.meta.env.VITE_SERVER_URL}/tickets`, {
         headers: { Authorization: `Bearer ${token}` },
@@ -30,6 +33,7 @@ export default function Tickets() {
   };
 
   const handleSubmit = async (e) => {
+    // Send the new ticket to the backend, then refresh the visible list.
     e.preventDefault();
     setLoading(true);
     try {

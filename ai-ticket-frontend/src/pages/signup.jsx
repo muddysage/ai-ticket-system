@@ -1,3 +1,5 @@
+// Provides the signup form and stores the returned user session after registration.
+
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
@@ -11,6 +13,7 @@ export default function SignupPage() {
   };
 
   const handleSignup = async (e) => {
+    // Create the account through the backend and redirect the new user home.
     e.preventDefault();
     setLoading(true);
     try {
@@ -21,11 +24,12 @@ export default function SignupPage() {
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify(form),
+          body: JSON.stringify(form),//converts the JavaScript object into JSON text.
         }
       );
 
       const data = await res.json();
+      //This converts the backend response into a JavaScript object.
 
       if (res.ok) {
         localStorage.setItem("token", data.token);

@@ -1,3 +1,5 @@
+// Fetches and displays one ticket together with its AI analysis and assignment data.
+
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import ReactMarkdown from "react-markdown";
@@ -10,6 +12,7 @@ export default function TicketDetailsPage() {
   const token = localStorage.getItem("token");
 
   useEffect(() => {
+    // The route parameter identifies which ticket should be loaded.
     const fetchTicket = async () => {
       try {
         const res = await fetch(

@@ -4,7 +4,10 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 export default function SignupPage() {
-  const [form, setForm] = useState({ email: "", password: "" });
+  const [form, setForm] = useState({
+    email: "",
+    password: "",
+  });
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
@@ -13,7 +16,7 @@ export default function SignupPage() {
   };
 
   const handleSignup = async (e) => {
-    // Create the account through the backend and redirect the new user home.
+    // Create the public account through the backend and redirect the new user home.
     e.preventDefault();
     setLoading(true);
     try {
@@ -24,19 +27,21 @@ export default function SignupPage() {
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify(form),//converts the JavaScript object into JSON text.
+          body: JSON.stringify({
+            email: form.email,
+            password: form.password,
+          }),
         }
       );
 
       const data = await res.json();
-      //This converts the backend response into a JavaScript object.
 
       if (res.ok) {
         localStorage.setItem("token", data.token);
         localStorage.setItem("user", JSON.stringify(data.user));
         navigate("/");
       } else {
-        alert(data.message || "Signup failed");
+        alert(data.message || data.error || "Signup failed");
       }
     } catch (err) {
       alert("Something went wrong");
@@ -69,6 +74,7 @@ export default function SignupPage() {
             className="input input-bordered"
             value={form.password}
             onChange={handleChange}
+            minLength={6}
             required
           />
 

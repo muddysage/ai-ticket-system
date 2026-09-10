@@ -6,18 +6,34 @@ import User from "../models/user.js";
 import { inngest } from "../inngest/client.js";
 
 export const signup = async (req, res) => {
-  // Creates a user, starts the welcome-email workflow, and returns a JWT.
-  const { email, password, skills = [] } = req.body;
+  // Creates a public user account. Role and skills must be assigned later by an admin-only workflow.
+  const { email, password } = req.body;
+
+  if (!email || !password || password.length < 6) {
+    return res
+      .status(400)
+      .json({ error: "Email and a password of at least 6 characters are required" });
+  }
+
   try {
     const hashed = await brcypt.hash(password, 10);
-    const user = await User.create({ email, password: hashed, skills });
-
-    await inngest.send({
-      name: "user/signup",
-      data: {
-        email,
-      },
+    const user = await User.create({
+      email,
+      password: hashed,
+      skills: [],
+      role: "user",
     });
+
+    try {
+      await inngest.send({
+        name: "user/signup",
+        data: {
+          email,
+        },
+      });
+    } catch (error) {
+      console.error("Welcome email event could not be sent:", error.message);
+    }
 
     const token = jwt.sign(
       { _id: user._id, role: user.role },//payload:This payload contains only the user identity information the backend wants to trust later.
@@ -33,6 +49,7 @@ export const signup = async (req, res) => {
     };
 
     return res.json({ user: plainUser, token });
+
   } catch (error) {
     return res
       .status(500)
@@ -42,11 +59,19 @@ export const signup = async (req, res) => {
 
 export const login = async (req, res) => {
   // Verifies credentials and returns a JWT containing the user's identity and role.
-  const { email, password } = req.body;
+  const { email, password, role } = req.body;
+
+  if (!email || !password) {
+    return res.status(400).json({ error: "Email and password are required" });
+  }
 
   try {
     const user = await User.findOne({ email });
     if (!user) return res.status(401).json({ error: "User not found" });
+
+    if (role && user.role !== role) {
+      return res.status(403).json({ error: "Role not authorized for this account" });
+    }
 
     const isMatch = await brcypt.compare(password, user.password);
 

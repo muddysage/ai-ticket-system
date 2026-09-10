@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 export default function LoginPage() {
-  const [form, setForm] = useState({ email: "", password: "" });
+  const [form, setForm] = useState({ email: "", password: "", role: "user" });
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
@@ -22,7 +22,11 @@ export default function LoginPage() {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(form),
+        body: JSON.stringify({
+          email: form.email,
+          password: form.password,
+          role: form.role,
+        }),
       });
 
       const data = await res.json();
@@ -32,7 +36,7 @@ export default function LoginPage() {
         localStorage.setItem("user", JSON.stringify(data.user));
         navigate("/");
       } else {
-        alert(data.message || "Login failed");
+        alert(data.message || data.error || "Login failed");
       }
     } catch (err) {
       alert("Something went wrong");
@@ -47,6 +51,23 @@ export default function LoginPage() {
       <div className="card w-full max-w-sm shadow-xl bg-base-100">
         <form onSubmit={handleLogin} className="card-body">
           <h2 className="card-title justify-center">Login</h2>
+
+          <div className="grid grid-cols-3 gap-2">
+            {[
+              { role: "user", label: "User Login" },
+              { role: "moderator", label: "Moderator Login" },
+              { role: "admin", label: "Admin Login" },
+            ].map((entry) => (
+              <button
+                key={entry.role}
+                type="button"
+                className={`btn btn-sm ${form.role === entry.role ? "btn-primary" : "btn-outline"}`}
+                onClick={() => setForm({ ...form, role: entry.role })}
+              >
+                {entry.label}
+              </button>
+            ))}
+          </div>
 
           <input
             type="email"
@@ -65,6 +86,7 @@ export default function LoginPage() {
             className="input input-bordered"
             value={form.password}
             onChange={handleChange}
+            minLength={6}
             required
           />
 
@@ -74,7 +96,7 @@ export default function LoginPage() {
               className="btn btn-primary w-full"
               disabled={loading}
             >
-              {loading ? "Logging in..." : "Login"}
+              {loading ? "Logging in..." : `Login as ${form.role}`}
             </button>
           </div>
         </form>

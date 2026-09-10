@@ -7,7 +7,7 @@ export const sendMail = async (to, subject, text) => {
     // Create the SMTP transporter from environment-specific Mailtrap settings.
     const transporter = nodemailer.createTransport({
       host: process.env.MAILTRAP_SMTP_HOST,
-      port: process.env.MAILTRAP_SMTP_PORT,
+      port: Number(process.env.MAILTRAP_SMTP_PORT),
       secure: false, // true for 465, false for other ports
       auth: {
         user: process.env.MAILTRAP_SMTP_USER,
@@ -16,7 +16,7 @@ export const sendMail = async (to, subject, text) => {
     });
 
     const info = await transporter.sendMail({
-      from: '"Inngest TMS',
+      from: '"Inngest TMS" <no-reply@ticket-system.local>',
       to,
       subject,
       text,

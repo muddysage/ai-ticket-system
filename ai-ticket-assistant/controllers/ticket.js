@@ -40,13 +40,16 @@ export const createTicket = async (req, res) => {
 };
 
 export const getTickets = async (req, res) => {
-  // Returns all tickets for staff and only the current user's tickets for users.
   try {
     const user = req.user;
     let tickets = [];
 
-    if (user.role !== "user") {
+    if (user.role === "admin") {
       tickets = await Ticket.find({})
+        .populate("assignedTo", ["email", "_id"])
+        .sort({ createdAt: -1 });
+    } else if (user.role === "moderator") {
+      tickets = await Ticket.find({ assignedTo: user._id })
         .populate("assignedTo", ["email", "_id"])
         .sort({ createdAt: -1 });
     } else {
@@ -63,24 +66,30 @@ export const getTickets = async (req, res) => {
 };
 
 export const getTicket = async (req, res) => {
-  // Returns one ticket while limiting the visible fields for regular users.
   try {
     const user = req.user;
     let ticket;
 
-    if (user.role !== "user") {
-      ticket = await Ticket.findById(req.params.id).populate("assignedTo", [
-        "email",
-        "_id",
-      ]);
+    if (user.role === "admin") {
+      ticket = await Ticket.findById(req.params.id)
+        .populate("assignedTo", ["email", "_id"])
+        .populate("similarTickets", ["title", "_id"]);
+    } else if (user.role === "moderator") {
+      ticket = await Ticket.findOne({
+        _id: req.params.id,
+        assignedTo: user._id,
+      })
+        .populate("assignedTo", ["email", "_id"])
+        .populate("similarTickets", ["title", "_id"]);
     } else {
       ticket = await Ticket.findOne({
         createdBy: user._id,
         _id: req.params.id,
       })
         .populate("assignedTo", ["email", "_id"])
+        .populate("similarTickets", ["title", "_id"])
         .select(
-          "title description status createdAt priority helpfulNotes relatedSkills assignedTo"
+          "title description status createdAt priority helpfulNotes relatedSkills assignedTo similarTickets suggestedSolution confidenceScore"
         );
     }
 
@@ -92,5 +101,47 @@ export const getTicket = async (req, res) => {
   } catch (error) {
     console.error("Error fetching ticket", error.message);
     return res.status(500).json({ message: "Internal Server Error" });
+  }
+};
+
+export const resolveTicket = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { moderatorNotes, userRating } = req.body;
+
+    const ticket = await Ticket.findById(id);
+
+    if (!ticket) {
+      return res.status(404).json({ error: "Ticket not found" });
+    }
+
+    const finalSolution = moderatorNotes || ticket.suggestedSolution || "Ticket resolved.";
+
+    await inngest.send({
+      name: "tickets/resolved",
+      data: {
+        ticketId: id,
+        resolution: {
+          moderatorNotes: finalSolution,
+          userRating,
+          resolutionTime: new Date() - ticket.createdAt,
+          moderatorId: req.user._id,
+        },
+      },
+    });
+
+    await Ticket.findByIdAndUpdate(id, {
+      status: "resolved",
+      resolutionNotes: finalSolution,
+      suggestedSolution: finalSolution,
+    });
+
+    return res.json({
+      success: true,
+      message: "Ticket resolved and stored in knowledge base",
+    });
+  } catch (error) {
+    console.error("Error resolving ticket:", error);
+    return res.status(500).json({ error: error.message });
   }
 };

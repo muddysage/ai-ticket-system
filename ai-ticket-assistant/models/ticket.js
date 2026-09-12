@@ -13,6 +13,37 @@ const ticketSchema = new mongoose.Schema({
     ref: "User",
     default: null,
   },
+
+  category: {
+    type: String,
+    default: "general",
+  },
+
+  requiredSkills: [String],
+
+  suggestedSolution: {
+    type: String,
+    default: null,
+  },
+
+  confidenceScore: {
+    type: Number,
+    min: 0,
+    max: 1,
+    default: 0,
+  },
+
+  similarTickets: [
+    {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Ticket",
+    },
+  ],
+
+  resolutionNotes: {
+    type: String,
+    default: null,
+  },
   priority: String,
   deadline: Date,
   helpfulNotes: String,

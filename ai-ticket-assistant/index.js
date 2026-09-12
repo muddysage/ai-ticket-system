@@ -7,6 +7,8 @@ import ticketRoutes from "./routes/ticket.js";
 import { inngest } from "./inngest/client.js";
 import { onUserSignup } from "./inngest/functions/on-signup.js";
 import { onTicketCreated } from "./inngest/functions/on-ticket-create.js";
+import { onTicketResolved } from "./inngest/functions/resolveticket.js";
+import ticketRAG from "./src/rag/ticketrag.js";
 
 import dotenv from "dotenv";
 dotenv.config();
@@ -24,7 +26,7 @@ app.use(
   "/api/inngest",
   serve({
     client: inngest,
-    functions: [onUserSignup, onTicketCreated],
+    functions: [onUserSignup, onTicketCreated, onTicketResolved],
   })
 );
 
@@ -32,6 +34,21 @@ mongoose
   .connect(process.env.MONGO_URI)
   .then(() => {
     console.log("MongoDB connected ✅");
-    app.listen(PORT, () => console.log("🚀 Server at http://localhost:3000"));
+    // Initialize RAG system first
+    const startServer = async () => {
+      try {
+        await ticketRAG.initializeVectorStore();
+        
+        app.listen(PORT, () => {
+          console.log(`✅ Server running on port ${PORT}`);
+          console.log(`📍 RAG System: Ready`);
+        });
+      } catch (error) {
+        console.error("Failed to start server:", error);
+        process.exit(1);
+      }
+    };
+
+    startServer();
   })
   .catch((err) => console.error("❌ MongoDB error: ", err));

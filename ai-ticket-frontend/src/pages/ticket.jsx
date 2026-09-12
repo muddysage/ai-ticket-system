@@ -8,11 +8,57 @@ export default function TicketDetailsPage() {
   const { id } = useParams();
   const [ticket, setTicket] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [resolving, setResolving] = useState(false);
 
   const token = localStorage.getItem("token");
+  const user = JSON.parse(localStorage.getItem("user") || "{}");
+
+  const resolveTicket = async () => {
+    if (!token) return;
+
+    try {
+      setResolving(true);
+      const res = await fetch(
+        `${import.meta.env.VITE_SERVER_URL}/tickets/${id}/resolve`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            moderatorNotes: "Resolved by moderator",
+            userRating: 5,
+          }),
+        }
+      );
+
+      const data = await res.json();
+      if (!res.ok) {
+        alert(data.error || "Unable to resolve ticket");
+        return;
+      }
+
+      alert("Ticket resolved successfully");
+      const refreshed = await fetch(
+        `${import.meta.env.VITE_SERVER_URL}/tickets/${id}`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+      const refreshedData = await refreshed.json();
+      if (refreshed.ok) {
+        setTicket(refreshedData.ticket);
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Something went wrong while resolving the ticket");
+    } finally {
+      setResolving(false);
+    }
+  };
 
   useEffect(() => {
-    // The route parameter identifies which ticket should be loaded.
     const fetchTicket = async () => {
       try {
         const res = await fetch(
@@ -49,10 +95,17 @@ export default function TicketDetailsPage() {
       <h2 className="text-2xl font-bold mb-4">Ticket Details</h2>
 
       <div className="card bg-gray-800 shadow p-4 space-y-4">
-        <h3 className="text-xl font-semibold">{ticket.title}</h3>
+        <div className="flex justify-between items-center gap-4">
+          <h3 className="text-xl font-semibold">{ticket.title}</h3>
+          {(user.role === "moderator" || user.role === "admin") &&
+            ticket.status !== "resolved" && (
+              <button className="btn btn-success btn-sm" onClick={resolveTicket} disabled={resolving}>
+                {resolving ? "Resolving..." : "Resolve Ticket"}
+              </button>
+            )}
+        </div>
         <p>{ticket.description}</p>
 
-        {/* Conditionally render extended details */}
         {ticket.status && (
           <>
             <div className="divider">Metadata</div>
@@ -91,6 +144,37 @@ export default function TicketDetailsPage() {
               <p className="text-sm text-gray-500 mt-2">
                 Created At: {new Date(ticket.createdAt).toLocaleString()}
               </p>
+            )}
+
+            {ticket.suggestedSolution && (
+              <div className="rounded border border-blue-500 bg-slate-900 p-4 mt-4">
+                <h3 className="text-lg font-semibold text-blue-300">
+                  🤖 AI Suggested Solution
+                </h3>
+                <p className="mt-2 whitespace-pre-wrap">{ticket.suggestedSolution}</p>
+
+                {typeof ticket.confidenceScore === "number" && (
+                  <span className="inline-block mt-2 text-sm text-green-300">
+                    Confidence: {(ticket.confidenceScore * 100).toFixed(1)}%
+                  </span>
+                )}
+
+                {Array.isArray(ticket.similarTickets) &&
+                  ticket.similarTickets.length > 0 && (
+                    <div className="mt-4">
+                      <h4 className="font-semibold">📋 Similar Past Cases:</h4>
+                      <ul className="list-disc ml-5">
+                        {ticket.similarTickets.map((t) => (
+                          <li key={t._id || t}>
+                            <a className="link link-primary" href={`/tickets/${t._id || t}`}> 
+                              {t.title || "Similar ticket"}
+                            </a>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+              </div>
             )}
           </>
         )}
